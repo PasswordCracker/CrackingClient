@@ -6,19 +6,31 @@ using System.Threading.Tasks;
 
 namespace ClientCracking
 {
+    [Serializable]
     public class UserInfo
     {
-        public string Username
+        public String Username { get; set; }
+        public String EntryptedPasswordBase64 { get; set; }
+        public byte[] EntryptedPassword { get; set; }
+
+        public UserInfo(String username, String entryptedPasswordBase64)
         {
-            get;set;
+            if (username == null)
+            {
+                throw new ArgumentNullException("username");
+            }
+            if (entryptedPasswordBase64 == null)
+            {
+                throw new ArgumentNullException("entryptedPasswordBase64");
+            }
+            Username = username;
+            EntryptedPasswordBase64 = entryptedPasswordBase64;
+            EntryptedPassword = Convert.FromBase64String(entryptedPasswordBase64);
         }
-        public string HashedPassword
+
+        public override string ToString()
         {
-            get;set;
-        }
-        public string ClearTextPassword
-        {
-            get;set;
+            return Username + ":" + EntryptedPasswordBase64;
         }
     }
 }

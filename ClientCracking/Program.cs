@@ -15,7 +15,11 @@ namespace ClientCracking
         {
             Console.WriteLine("Client started");
 
-            
+            Cracking cracker = new Cracking();
+            cracker.RunCracking();
+
+            Console.ReadLine();
+
             TcpClient socket = new TcpClient("localhost", 10000);
             NetworkStream ns = socket.GetStream();
             StreamReader reader = new StreamReader(ns);
@@ -54,8 +58,8 @@ namespace ClientCracking
             chunk = JsonSerializer.Deserialize<List<string>>(response);
 
             //cracking the passwords
-            Cracking cracker = new Cracking();
-            Dictionary<string, string> CrackedPasswords =  cracker.RunCracking();
+            //Cracking cracker = new Cracking();
+            //Dictionary<string, string> CrackedPasswords =  cracker.RunCracking();
 
             //send results
             

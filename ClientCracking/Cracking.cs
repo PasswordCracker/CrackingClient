@@ -28,10 +28,10 @@ namespace ClientCracking
         {
             List<string> wordlist = new List<string>();
 
-            using (FileStream fs = new FileStream("webster-dictionary.txt", FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(@"C:\Users\Radu\Source\Repos\CrackingClient\ClientCracking\Temp\webster-dictionary.txt", FileMode.Open, FileAccess.Read))
             using (StreamReader dictionary = new StreamReader(fs))
             {
-                while (!dictionary.EndOfStream && wordlist.Count <= 1000)
+                while (!dictionary.EndOfStream )
                 {
                     string dictionaryEntry = dictionary.ReadLine();
                     wordlist.Add(dictionaryEntry);
@@ -39,45 +39,52 @@ namespace ClientCracking
             }
             return wordlist;
         }
+        public static Dictionary<string, string> ReadPasswords()
+        {
+            Dictionary<string, string> credentialDictionary = new Dictionary<string, string>();
+
+            using (FileStream fs = new FileStream(@"C:\Users\Radu\Source\Repos\CrackingClient\ClientCracking\Temp\passwords.txt", FileMode.Open, FileAccess.Read))
+            using (StreamReader passwords = new StreamReader(fs))
+            {
+                while (!passwords.EndOfStream)
+                {
+                    string passwordsEntry = passwords.ReadLine();
+                    string[] credentials = passwordsEntry.Split(":");
+                    credentialDictionary.Add(credentials[0].ToString(), credentials[1].ToString());
+
+                }
+            }
+            return credentialDictionary;
+        }
         /// <summary>
         /// Runs the password cracking algorithm
         /// </summary>
-        public Dictionary<string, string> RunCracking()
+        public void RunCracking()
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            List<UserInfo> userInfos = new List<UserInfo>();
-            foreach (var pair in Program.passwords)
+            List<UserInfo> userInfos =
+                PasswordFileHandler.ReadPasswordFile(@"C:\Users\Radu\Source\Repos\CrackingClient\ClientCracking\Temp\passwords.txt");
+            Console.WriteLine("passwd opeend");
+
+            List<UserInfoClearText> result = new List<UserInfoClearText>();
+
+            using (FileStream fs = new FileStream(@"C:\Users\Radu\Source\Repos\CrackingClient\ClientCracking\Temp\webster-dictionary.txt", FileMode.Open, FileAccess.Read))
+
+            using (StreamReader dictionary = new StreamReader(fs))
             {
-                UserInfo user = new UserInfo();
-                user.Username = pair.Key;
-                user.HashedPassword = pair.Value;
-                userInfos.Add(user);
+                while (!dictionary.EndOfStream)
+                {
+                    String dictionaryEntry = dictionary.ReadLine();
+                    IEnumerable<UserInfoClearText> partialResult = CheckWordWithVariations(dictionaryEntry, userInfos);
+                    result.AddRange(partialResult);
+                }
             }
-            Console.WriteLine("passwords opened");
-
-            List<UserInfo> result = new List<UserInfo>();
-
-            List<string> testchunk = ReadDictionary();
-            foreach(string word in testchunk)
-            {
-                string dictionaryEntry = word;
-                IEnumerable<UserInfo> partialResult = CheckWordWithVariations(dictionaryEntry, userInfos);
-                result.AddRange(partialResult);
-            }
-
             stopwatch.Stop();
             Console.WriteLine(string.Join(", ", result));
             Console.WriteLine("Out of {0} password {1} was found ", userInfos.Count, result.Count);
             Console.WriteLine();
             Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
-
-            Dictionary<string, string> FinalResult = new Dictionary<string, string>();
-            foreach(var userinfo in result)
-            {
-                FinalResult.Add(userinfo.Username, userinfo.ClearTextPassword);
-            }
-            return FinalResult;
         }
 
         /// <summary>
@@ -86,37 +93,37 @@ namespace ClientCracking
         /// <param name="dictionaryEntry">A single word from the dictionary</param>
         /// <param name="userInfos">List of (username, encrypted password) pairs from the password file</param>
         /// <returns>A list of (username, readable password) pairs. The list might be empty</returns>
-        private IEnumerable<UserInfo> CheckWordWithVariations(string dictionaryEntry, List<UserInfo> userInfos)
+        private IEnumerable<UserInfoClearText> CheckWordWithVariations(String dictionaryEntry, List<UserInfo> userInfos)
         {
-            List<UserInfo> result = new List<UserInfo>(); //might be empty
+            List<UserInfoClearText> result = new List<UserInfoClearText>(); //might be empty
 
-            string possiblePassword = dictionaryEntry;
-            IEnumerable<UserInfo> partialResult = CheckSingleWord(userInfos, possiblePassword);
+            String possiblePassword = dictionaryEntry;
+            IEnumerable<UserInfoClearText> partialResult = CheckSingleWord(userInfos, possiblePassword);
             result.AddRange(partialResult);
 
-            string possiblePasswordUpperCase = dictionaryEntry.ToUpper();
-            IEnumerable<UserInfo> partialResultUpperCase = CheckSingleWord(userInfos, possiblePasswordUpperCase);
+            String possiblePasswordUpperCase = dictionaryEntry.ToUpper();
+            IEnumerable<UserInfoClearText> partialResultUpperCase = CheckSingleWord(userInfos, possiblePasswordUpperCase);
             result.AddRange(partialResultUpperCase);
 
-            string possiblePasswordCapitalized = StringUtilities.Capitalize(dictionaryEntry);
-            IEnumerable<UserInfo> partialResultCapitalized = CheckSingleWord(userInfos, possiblePasswordCapitalized);
+            String possiblePasswordCapitalized = StringUtilities.Capitalize(dictionaryEntry);
+            IEnumerable<UserInfoClearText> partialResultCapitalized = CheckSingleWord(userInfos, possiblePasswordCapitalized);
             result.AddRange(partialResultCapitalized);
 
-            string possiblePasswordReverse = StringUtilities.Reverse(dictionaryEntry);
-            IEnumerable<UserInfo> partialResultReverse = CheckSingleWord(userInfos, possiblePasswordReverse);
+            String possiblePasswordReverse = StringUtilities.Reverse(dictionaryEntry);
+            IEnumerable<UserInfoClearText> partialResultReverse = CheckSingleWord(userInfos, possiblePasswordReverse);
             result.AddRange(partialResultReverse);
 
             for (int i = 0; i < 100; i++)
             {
                 String possiblePasswordEndDigit = dictionaryEntry + i;
-                IEnumerable<UserInfo> partialResultEndDigit = CheckSingleWord(userInfos, possiblePasswordEndDigit);
+                IEnumerable<UserInfoClearText> partialResultEndDigit = CheckSingleWord(userInfos, possiblePasswordEndDigit);
                 result.AddRange(partialResultEndDigit);
             }
 
             for (int i = 0; i < 100; i++)
             {
                 String possiblePasswordStartDigit = i + dictionaryEntry;
-                IEnumerable<UserInfo> partialResultStartDigit = CheckSingleWord(userInfos, possiblePasswordStartDigit);
+                IEnumerable<UserInfoClearText> partialResultStartDigit = CheckSingleWord(userInfos, possiblePasswordStartDigit);
                 result.AddRange(partialResultStartDigit);
             }
 
@@ -125,7 +132,7 @@ namespace ClientCracking
                 for (int j = 0; j < 10; j++)
                 {
                     String possiblePasswordStartEndDigit = i + dictionaryEntry + j;
-                    IEnumerable<UserInfo> partialResultStartEndDigit = CheckSingleWord(userInfos, possiblePasswordStartEndDigit);
+                    IEnumerable<UserInfoClearText> partialResultStartEndDigit = CheckSingleWord(userInfos, possiblePasswordStartEndDigit);
                     result.AddRange(partialResultStartEndDigit);
                 }
             }
@@ -139,26 +146,22 @@ namespace ClientCracking
         /// <param name="userInfos"></param>
         /// <param name="possiblePassword">List of (username, encrypted password) pairs from the password file</param>
         /// <returns>A list of (username, readable password) pairs. The list might be empty</returns>
-        private IEnumerable<UserInfo> CheckSingleWord(IEnumerable<UserInfo> userInfos, string possiblePassword)
+        private IEnumerable<UserInfoClearText> CheckSingleWord(IEnumerable<UserInfo> userInfos, String possiblePassword)
         {
-            char[] charArrayPossible = possiblePassword.ToCharArray();
-            byte[] passwordAsBytesPossible = Array.ConvertAll(charArrayPossible, PasswordFileHandler.GetConverter());
+            char[] charArray = possiblePassword.ToCharArray();
+            byte[] passwordAsBytes = Array.ConvertAll(charArray, PasswordFileHandler.GetConverter());
 
-            byte[] encryptedPasswordPossible = _messageDigest.ComputeHash(passwordAsBytesPossible);
+            byte[] encryptedPassword = _messageDigest.ComputeHash(passwordAsBytes);
             //string encryptedPasswordBase64 = System.Convert.ToBase64String(encryptedPassword);
 
-            List<UserInfo> results = new List<UserInfo>();
+            List<UserInfoClearText> results = new List<UserInfoClearText>();
 
             foreach (UserInfo userInfo in userInfos)
             {
-                char[] charArrayUser = userInfo.HashedPassword.ToCharArray();
-                byte[] passwordAsBytesUser = Array.ConvertAll(charArrayUser, PasswordFileHandler.GetConverter());
-
-                if (CompareBytes(passwordAsBytesUser, encryptedPasswordPossible))  //compares byte arrays
+                if (CompareBytes(userInfo.EntryptedPassword, encryptedPassword))  //compares byte arrays
                 {
-                    userInfo.ClearTextPassword = possiblePassword;
-                    results.Add(userInfo);
-                    Console.WriteLine(userInfo.Username + " " + userInfo.ClearTextPassword);
+                    results.Add(new UserInfoClearText(userInfo.Username, possiblePassword));
+                    Console.WriteLine(userInfo.Username + " " + possiblePassword);
                 }
             }
             return results;
