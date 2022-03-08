@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
 
 namespace ClientCracking
@@ -15,16 +16,16 @@ namespace ClientCracking
         {
             Console.WriteLine("Client started");
 
-            Cracking cracker = new Cracking();
-            cracker.RunCracking();
+            //Cracking cracker = new Cracking();
+            //cracker.RunCracking();
 
-            Console.ReadLine();
-
-            TcpClient socket = new TcpClient("localhost", 10000);
+            TcpClient socket = new TcpClient("localhost", 21);
+            socket.ReceiveTimeout = 50000;
+            socket.SendTimeout = 50000;
             NetworkStream ns = socket.GetStream();
             StreamReader reader = new StreamReader(ns);
             StreamWriter writer = new StreamWriter(ns);
-
+            Console.WriteLine("Client connected");
             Console.WriteLine("Type ready to start.");
 
             //waiting until the user types ready
@@ -48,20 +49,41 @@ namespace ClientCracking
 
                 response = reader.ReadLine();
             }
+            Console.WriteLine("Server is ready.");
 
             //receives the passwords
-            response = reader.ReadToEnd();
+            response = reader.ReadLine();
             passwords = JsonSerializer.Deserialize<Dictionary<string, string>>(response);
+            Console.WriteLine("Received the passwords");
 
             //receives the chunk of the dictionary
-            response = reader.ReadToEnd();
-            chunk = JsonSerializer.Deserialize<List<string>>(response);
+            response = reader.ReadLine();
+            while (response.ToLower() != "finished")
+            {
+                chunk = JsonSerializer.Deserialize<List<string>>(response);
 
-            //cracking the passwords
-            //Cracking cracker = new Cracking();
-            //Dictionary<string, string> CrackedPasswords =  cracker.RunCracking();
+                //cracking the passwords
+                Cracking cracker = new Cracking();
+                Dictionary<string, string> CrackedPasswords = cracker.RunCracking();
 
-            //send results
+                //sending results
+                if (CrackedPasswords.Count > 0)
+                {
+                    string jsonresult = JsonSerializer.Serialize(CrackedPasswords);
+                    writer.WriteLine(jsonresult);
+                    writer.Flush();
+                }
+                else
+                {
+                    writer.WriteLine("empty");
+                    writer.Flush();
+                }
+
+                response = reader.ReadLine();
+            }
+
+            //Task finished
+            Console.WriteLine("Finished");
             
         }
     }
