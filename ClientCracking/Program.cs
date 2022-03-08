@@ -20,8 +20,6 @@ namespace ClientCracking
             //cracker.RunCracking();
 
             TcpClient socket = new TcpClient("localhost", 21);
-            socket.ReceiveTimeout = 50000;
-            socket.SendTimeout = 50000;
             NetworkStream ns = socket.GetStream();
             StreamReader reader = new StreamReader(ns);
             StreamWriter writer = new StreamWriter(ns);
@@ -60,6 +58,12 @@ namespace ClientCracking
             response = reader.ReadLine();
             while (response.ToLower() != "finished")
             {
+                //if(response == "nochunks")
+                //{
+                //    writer.WriteLine("ready");
+                //    writer.Flush();
+                //    break;
+                //}
                 chunk = JsonSerializer.Deserialize<List<string>>(response);
 
                 //cracking the passwords
@@ -81,7 +85,13 @@ namespace ClientCracking
 
                 response = reader.ReadLine();
             }
-
+            socket.Client.Close();
+            //response = reader.ReadLine();
+            //while (response != "finished")
+            //{
+            //    Console.WriteLine(response);
+            //    response = reader.ReadLine();
+            //}
             //Task finished
             Console.WriteLine("Finished");
             

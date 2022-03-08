@@ -183,7 +183,7 @@ namespace ClientCracking
             return true;
         }
         //adds 2 dictionaries together
-        private static Dictionary<string, string> Merge(Dictionary<string, string> dict1, Dictionary<string, string> dict2)
+        public static Dictionary<string, string> Merge(Dictionary<string, string> dict1, Dictionary<string, string> dict2)
         {
             foreach (KeyValuePair<string, string> pair in dict2)
             {
